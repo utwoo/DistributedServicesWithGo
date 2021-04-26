@@ -4,11 +4,13 @@ import (
 	"context"
 	"github.com/stretchr/testify/require"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/credentials"
 	"google.golang.org/grpc/status"
 	"io/ioutil"
 	"net"
 	"testing"
 	api "utwoo.com/DistributedServicesWithGo/api/v1"
+	"utwoo.com/DistributedServicesWithGo/internal/configs"
 	"utwoo.com/DistributedServicesWithGo/internal/log"
 )
 
@@ -43,12 +45,27 @@ func TestServer(t *testing.T) {
 // tests further down would never run.
 func setupTest(t *testing.T, fn func(*Config)) (client api.LogClient, config *Config, teardown func()) {
 	t.Helper()
-	listener, err := net.Listen("tcp", ":0")
+	listener, err := net.Listen("tcp", "127.0.0.1:8080")
 	require.NoError(t, err)
 
-	clientOptions := []grpc.DialOption{grpc.WithInsecure()}
-	cc, err := grpc.Dial(listener.Addr().String(), clientOptions...)
+	// we configure our client’s TLS credentials to use our CA as the
+	// client’s Root CA (the CA it will use to verify the server). Then we tell the client
+	// to use those credentials for its connection.
+	clientTLSConfig, err := configs.SetupTLSConfig(configs.TLSConfig{CAFile: configs.CAFile})
 	require.NoError(t, err)
+	clientCreds := credentials.NewTLS(clientTLSConfig)
+
+	cc, err := grpc.Dial(listener.Addr().String(), grpc.WithTransportCredentials(clientCreds))
+	require.NoError(t, err)
+
+	serverTLSConfig, err := configs.SetupTLSConfig(configs.TLSConfig{
+		CertFile:      configs.ServerCertFile,
+		KeyFile:       configs.ServerKeyFile,
+		CAFile:        configs.CAFile,
+		ServerAddress: listener.Addr().String(),
+	})
+	require.NoError(t, err)
+	serverCreds := credentials.NewTLS(serverTLSConfig)
 
 	dir, err := ioutil.TempDir("", "server-test")
 	require.NoError(t, err)
@@ -62,7 +79,7 @@ func setupTest(t *testing.T, fn func(*Config)) (client api.LogClient, config *Co
 		fn(cfg)
 	}
 
-	server, err := NewGRPCServer(cfg)
+	server, err := NewGRPCServer(cfg, grpc.Creds(serverCreds))
 	require.NoError(t, err)
 
 	go func() {

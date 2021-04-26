@@ -1,0 +1,16 @@
+{
+  "CN": "Utwoo CA",
+  "key": {
+    "algo": "rsa",
+    "size": 2048
+  },
+  "names": [
+    {
+      "C": "CN",
+      "L": "SH",
+      "ST": "Shanghai",
+      "O": "Utwoo Company",
+      "OU": "CA Services"
+    }
+  ]
+}
