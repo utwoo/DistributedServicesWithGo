@@ -6,7 +6,7 @@ import (
 	"io/ioutil"
 	"os"
 	"testing"
-	api "utwoo.com/DistributedServicesWithGo/WriteALogPackage/api/v1"
+	api "utwoo.com/DistributedServicesWithGo/api/v1"
 )
 
 func TestLog(t *testing.T) {
@@ -51,7 +51,8 @@ func testAppendRead(t *testing.T, log *Log) {
 func testOutOfRangeErr(t *testing.T, log *Log) {
 	read, err := log.Read(1)
 	require.Nil(t, read)
-	require.Error(t, err)
+	apiErr := err.(api.ErrOffsetOutOfRange)
+	require.Equal(t, uint64(1), apiErr.Offset)
 }
 
 // testInitExisting(*testing.T,*log.Log) tests that when we create a log, the log bootstraps

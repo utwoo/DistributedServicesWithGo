@@ -12,7 +12,7 @@ import (
 	"path"
 
 	"google.golang.org/protobuf/proto"
-	api "utwoo.com/DistributedServicesWithGo/WriteALogPackage/api/v1"
+	api "utwoo.com/DistributedServicesWithGo/api/v1"
 )
 
 // Our segment needs to call its store and index files, so we keep pointers to

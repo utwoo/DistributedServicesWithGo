@@ -1,7 +1,6 @@
 package log
 
 import (
-	"fmt"
 	"io"
 	"io/ioutil"
 	"os"
@@ -10,7 +9,7 @@ import (
 	"strconv"
 	"strings"
 	"sync"
-	api "utwoo.com/DistributedServicesWithGo/WriteALogPackage/api/v1"
+	api "utwoo.com/DistributedServicesWithGo/api/v1"
 )
 
 // Log consists of a list of segments and a pointer to the active segment to
@@ -121,7 +120,7 @@ func (l *Log) Read(off uint64) (*api.Record, error) {
 		}
 	}
 	if s == nil || s.nextOffset <= off {
-		return nil, fmt.Errorf("offset out of range: %d", off)
+		return nil, api.ErrOffsetOutOfRange{Offset: off}
 	}
 	return s.Read(off)
 }

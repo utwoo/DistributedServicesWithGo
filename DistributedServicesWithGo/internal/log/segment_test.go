@@ -7,7 +7,7 @@ import (
 	"os"
 	"testing"
 
-	api "utwoo.com/DistributedServicesWithGo/WriteALogPackage/api/v1"
+	api "utwoo.com/DistributedServicesWithGo/api/v1"
 )
 
 func TestSegment(t *testing.T) {
