@@ -48,22 +48,51 @@ func setupTest(t *testing.T, fn func(*Config)) (client api.LogClient, config *Co
 	listener, err := net.Listen("tcp", "127.0.0.1:8080")
 	require.NoError(t, err)
 
+	/* TLS only in server
 	// we configure our client’s TLS credentials to use our CA as the
 	// client’s Root CA (the CA it will use to verify the server). Then we tell the client
 	// to use those credentials for its connection.
 	clientTLSConfig, err := configs.SetupTLSConfig(configs.TLSConfig{CAFile: configs.CAFile})
 	require.NoError(t, err)
+	*/
+
+	clientTLSConfig, err := configs.SetupTLSConfig(configs.TLSConfig{
+		CertFile: configs.ClientCertFile,
+		KeyFile:  configs.ClientKeyFile,
+		CAFile:   configs.CAFile,
+	})
+	require.NoError(t, err)
+
 	clientCreds := credentials.NewTLS(clientTLSConfig)
 
 	cc, err := grpc.Dial(listener.Addr().String(), grpc.WithTransportCredentials(clientCreds))
 	require.NoError(t, err)
+
+	// we’re parsing the server’s cert and key, which we then use to
+	// configure the server’s TLS credentials. We then pass those credentials as a
+	// gRPC server option to our NewGRPCServer() function so it can create our gRPC
+	// server with that option. gRPC server options are how you enable features in
+	// gRPC servers. We’re setting the credentials for the server connections in this
+	// case, but there are plenty of other server options to configure connection
+	// timeouts, keep alive policies, and so on.
+
+	/* TLS only in server
+	//serverTLSConfig, err := configs.SetupTLSConfig(configs.TLSConfig{
+	//	CertFile:      configs.ServerCertFile,
+	//	KeyFile:       configs.ServerKeyFile,
+	//	CAFile:        configs.CAFile,
+	//	ServerAddress: listener.Addr().String(),
+	//})
+	*/
 
 	serverTLSConfig, err := configs.SetupTLSConfig(configs.TLSConfig{
 		CertFile:      configs.ServerCertFile,
 		KeyFile:       configs.ServerKeyFile,
 		CAFile:        configs.CAFile,
 		ServerAddress: listener.Addr().String(),
+		Server:        true,
 	})
+
 	require.NoError(t, err)
 	serverCreds := credentials.NewTLS(serverTLSConfig)
 
