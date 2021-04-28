@@ -2,8 +2,17 @@ package server
 
 import (
 	"context"
+	"time"
+
 	grpc_middleware "github.com/grpc-ecosystem/go-grpc-middleware"
 	grpc_auth "github.com/grpc-ecosystem/go-grpc-middleware/auth"
+	grpc_zap "github.com/grpc-ecosystem/go-grpc-middleware/logging/zap"
+	grpc_ctxtags "github.com/grpc-ecosystem/go-grpc-middleware/tags"
+	"go.opencensus.io/plugin/ocgrpc"
+	"go.opencensus.io/stats/view"
+	"go.opencensus.io/trace"
+	"go.uber.org/zap"
+	"go.uber.org/zap/zapcore"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/credentials"
@@ -122,19 +131,54 @@ func newgrpcServer(config *Config) (*grpcServer, error) {
 // to provide your users a way to instantiate your service, create a gRPC server,
 // and register your service to that server
 func NewGRPCServer(config *Config, opts ...grpc.ServerOption) (*grpc.Server, error) {
+	// We specify the logger’s name to differentiate the server logs from other logs
+	// in our service. Then we add a “grpc.time_ns” field to our structured logs to log
+	// the duration of each request in nanoseconds.
+	logger := zap.L().Named("server")
+	zapOpts := []grpc_zap.Option{
+		grpc_zap.WithDurationField(
+			func(duration time.Duration) zapcore.Field {
+				return zap.Int64("grpc.time_ns", duration.Nanoseconds())
+			},
+		),
+	}
+
+	// We’ve configured OpenCensus to always sample the traces because we’re
+	// developing our service and we want all of our requests traced.
+	trace.ApplyConfig(trace.Config{DefaultSampler: trace.AlwaysSample()})
+
+	// The views specify what stats OpenCensus will collect. The default server views
+	// track stats on:
+	// • Received bytes per RPC
+	// • Sent bytes per RPC
+	// • Latency
+	// • Completed RPCs
+	err := view.Register(ocgrpc.DefaultServerViews...)
+	if err != nil {
+		return nil, err
+	}
+
 	// We hook up our authenticate() interceptor to our gRPC server so that our server
 	// identifies the subject of each RPC to kick off the authorization process.
+	// We configure gRPC to apply the Zap interceptors that log the gRPC
+	// calls and attach OpenCensus as the server’s stat handler so that OpenCensus
+	// can record stats on the server’s request handling.
 	opts = append(opts,
 		grpc.StreamInterceptor(
 			grpc_middleware.ChainStreamServer(
+				grpc_ctxtags.StreamServerInterceptor(),
+				grpc_zap.StreamServerInterceptor(logger, zapOpts...),
 				grpc_auth.StreamServerInterceptor(authenticate),
 			),
 		),
 		grpc.UnaryInterceptor(
 			grpc_middleware.ChainUnaryServer(
+				grpc_ctxtags.UnaryServerInterceptor(),
+				grpc_zap.UnaryServerInterceptor(logger, zapOpts...),
 				grpc_auth.UnaryServerInterceptor(authenticate),
 			),
 		),
+		grpc.StatsHandler(&ocgrpc.ServerHandler{}),
 	)
 
 	gsrv := grpc.NewServer(opts...)

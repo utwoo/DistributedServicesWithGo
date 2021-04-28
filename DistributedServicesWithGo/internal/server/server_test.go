@@ -2,19 +2,44 @@ package server
 
 import (
 	"context"
+	"flag"
+	"io/ioutil"
+	"net"
+	"os"
+	"testing"
+	"time"
+
 	"github.com/stretchr/testify/require"
+	"go.opencensus.io/examples/exporter"
+	"go.uber.org/zap"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/credentials"
 	"google.golang.org/grpc/status"
-	"io/ioutil"
-	"net"
-	"testing"
 	api "utwoo.com/DistributedServicesWithGo/api/v1"
 	"utwoo.com/DistributedServicesWithGo/internal/auth"
 	"utwoo.com/DistributedServicesWithGo/internal/configs"
 	"utwoo.com/DistributedServicesWithGo/internal/log"
 )
+
+var debug = flag.Bool("debug", false, "Enable observability for debugging.")
+
+// When a test file implements TestMain(m *testing.M), Go will call TestMain(m) instead
+// of running the tests directly. TestMain() gives us a place for setup that applies
+// to all tests in that file, like enabling our debug output. Flag parsing has to
+// go in TestMain() instead of init(), otherwise Go can’t define the flag and your code
+// will error and exit.
+func TestMain(m *testing.M) {
+	flag.Parse()
+	if *debug {
+		logger, err := zap.NewDevelopment()
+		if err != nil {
+			panic(err)
+		}
+		zap.ReplaceGlobals(logger)
+	}
+	os.Exit(m.Run())
+}
 
 // TestServer(*testing.T) defines our list of test cases and then runs a subtest for each case
 func TestServer(t *testing.T) {
@@ -114,6 +139,27 @@ func setupTest(t *testing.T, fn func(*Config)) (rootClient api.LogClient, nobody
 
 	// Update your test server’s configuration to pass in an authorizer.
 	authorizer, _ := auth.New(configs.ACLModelFile, configs.ACLPolicyFile)
+
+	var telemetryExporter *exporter.LogExporter
+	if *debug {
+		metricsLogFile, err := ioutil.TempFile("", "metrics-*.log")
+		require.NoError(t, err)
+		t.Logf("metrics log file: %s", metricsLogFile.Name())
+
+		tracesLogFile, err := ioutil.TempFile("", "traces-*.log")
+		require.NoError(t, err)
+		t.Logf("traces log file: %s", tracesLogFile.Name())
+
+		telemetryExporter, err = exporter.NewLogExporter(exporter.Options{
+			MetricsLogFile:    metricsLogFile.Name(),
+			TracesLogFile:     tracesLogFile.Name(),
+			ReportingInterval: time.Second,
+		})
+		require.NoError(t, err)
+		err = telemetryExporter.Start()
+		require.NoError(t, err)
+	}
+
 	cfg := &Config{
 		CommitLog:  clog,
 		Authorizer: authorizer,
@@ -135,7 +181,13 @@ func setupTest(t *testing.T, fn func(*Config)) (rootClient api.LogClient, nobody
 		rootConn.Close()
 		nobodyConn.Close()
 		listener.Close()
-		clog.Remove()
+		// We sleep for 1.5 seconds to give the telemetry exporter enough time to flush
+		// its data to disk. Then we stop and close the exporter.
+		if telemetryExporter != nil {
+			time.Sleep(1500 * time.Millisecond)
+			telemetryExporter.Stop()
+			telemetryExporter.Close()
+		}
 	}
 }
 

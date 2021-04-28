@@ -8,6 +8,8 @@ require (
 	github.com/kr/pretty v0.1.0 // indirect
 	github.com/stretchr/testify v1.7.0
 	github.com/tysontate/gommap v0.0.0-20201017170033-6edfc905bae0
+	go.opencensus.io v0.23.0 // indirect
+	go.uber.org/zap v1.16.0 // indirect
 	google.golang.org/appengine v1.6.6 // indirect
 	google.golang.org/genproto v0.0.0-20210423144448-3a41ef94ed2b
 	google.golang.org/grpc v1.37.0
