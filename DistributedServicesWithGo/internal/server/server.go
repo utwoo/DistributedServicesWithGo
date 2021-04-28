@@ -158,9 +158,9 @@ func NewGRPCServer(config *Config, opts ...grpc.ServerOption) (*grpc.Server, err
 		return nil, err
 	}
 
-	// We hook up our authenticate() interceptor to our gRPC server so that our server
+	// 1. We hook up our authenticate() interceptor to our gRPC server so that our server
 	// identifies the subject of each RPC to kick off the authorization process.
-	// We configure gRPC to apply the Zap interceptors that log the gRPC
+	// 2. We configure gRPC to apply the Zap interceptors that log the gRPC
 	// calls and attach OpenCensus as the server’s stat handler so that OpenCensus
 	// can record stats on the server’s request handling.
 	opts = append(opts,

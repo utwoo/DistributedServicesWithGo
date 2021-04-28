@@ -18,7 +18,7 @@ import (
 	"google.golang.org/grpc/status"
 	api "utwoo.com/DistributedServicesWithGo/api/v1"
 	"utwoo.com/DistributedServicesWithGo/internal/auth"
-	"utwoo.com/DistributedServicesWithGo/internal/configs"
+	"utwoo.com/DistributedServicesWithGo/internal/config"
 	"utwoo.com/DistributedServicesWithGo/internal/log"
 )
 
@@ -70,7 +70,7 @@ func TestServer(t *testing.T) {
 // Next we create our server and start serving requests in a goroutine because
 // the Serve method is a blocking call, and if we didn’t run it in a goroutine our
 // tests further down would never run.
-func setupTest(t *testing.T, fn func(*Config)) (rootClient api.LogClient, nobodyClient api.LogClient, config *Config, teardown func()) {
+func setupTest(t *testing.T, fn func(*Config)) (rootClient api.LogClient, nobodyClient api.LogClient, cfg *Config, teardown func()) {
 	t.Helper()
 	listener, err := net.Listen("tcp", "127.0.0.1:0")
 	require.NoError(t, err)
@@ -85,10 +85,10 @@ func setupTest(t *testing.T, fn func(*Config)) (rootClient api.LogClient, nobody
 	// whatever client they need based on whether they’re testing how the server
 	// works with an authorized or unauthorized client.
 	newClient := func(crtPath, keyPath string) (api.LogClient, *grpc.ClientConn, []grpc.DialOption) {
-		tlsConfig, err := configs.SetupTLSConfig(configs.TLSConfig{
+		tlsConfig, err := config.SetupTLSConfig(config.TLSConfig{
 			CertFile: crtPath,
 			KeyFile:  keyPath,
-			CAFile:   configs.CAFile,
+			CAFile:   config.CAFile,
 			Server:   false,
 		})
 		require.NoError(t, err)
@@ -100,8 +100,8 @@ func setupTest(t *testing.T, fn func(*Config)) (rootClient api.LogClient, nobody
 		return client, conn, opts
 	}
 
-	rootClient, rootConn, _ := newClient(configs.RootCertFile, configs.RootKeyFile)
-	nobodyClient, nobodyConn, _ := newClient(configs.NobodyCertFile, configs.NobodyKeyFile)
+	rootClient, rootConn, _ := newClient(config.RootCertFile, config.RootKeyFile)
+	nobodyClient, nobodyConn, _ := newClient(config.NobodyCertFile, config.NobodyKeyFile)
 
 	// we’re parsing the server’s cert and key, which we then use to
 	// configure the server’s TLS credentials. We then pass those credentials as a
@@ -112,18 +112,18 @@ func setupTest(t *testing.T, fn func(*Config)) (rootClient api.LogClient, nobody
 	// timeouts, keep alive policies, and so on.
 
 	/* (TLS only in server)
-	//serverTLSConfig, err := configs.SetupTLSConfig(configs.TLSConfig{
-	//	CertFile:      configs.ServerCertFile,
-	//	KeyFile:       configs.ServerKeyFile,
-	//	CAFile:        configs.CAFile,
+	//serverTLSConfig, err := cfg.SetupTLSConfig(cfg.TLSConfig{
+	//	CertFile:      cfg.ServerCertFile,
+	//	KeyFile:       cfg.ServerKeyFile,
+	//	CAFile:        cfg.CAFile,
 	//	ServerAddress: listener.Addr().String(),
 	//})
 	*/
 
-	serverTLSConfig, err := configs.SetupTLSConfig(configs.TLSConfig{
-		CertFile:      configs.ServerCertFile,
-		KeyFile:       configs.ServerKeyFile,
-		CAFile:        configs.CAFile,
+	serverTLSConfig, err := config.SetupTLSConfig(config.TLSConfig{
+		CertFile:      config.ServerCertFile,
+		KeyFile:       config.ServerKeyFile,
+		CAFile:        config.CAFile,
 		ServerAddress: listener.Addr().String(),
 		Server:        true,
 	})
@@ -138,8 +138,10 @@ func setupTest(t *testing.T, fn func(*Config)) (rootClient api.LogClient, nobody
 	require.NoError(t, err)
 
 	// Update your test server’s configuration to pass in an authorizer.
-	authorizer, _ := auth.New(configs.ACLModelFile, configs.ACLPolicyFile)
+	authorizer, _ := auth.New(config.ACLModelFile, config.ACLPolicyFile)
 
+	// Sets up and starts the telemetry exporter to write to two files.
+	// Each test gets its own separate trace and metrics files so we can see each test’s requests.
 	var telemetryExporter *exporter.LogExporter
 	if *debug {
 		metricsLogFile, err := ioutil.TempFile("", "metrics-*.log")
@@ -160,7 +162,7 @@ func setupTest(t *testing.T, fn func(*Config)) (rootClient api.LogClient, nobody
 		require.NoError(t, err)
 	}
 
-	cfg := &Config{
+	cfg = &Config{
 		CommitLog:  clog,
 		Authorizer: authorizer,
 	}
