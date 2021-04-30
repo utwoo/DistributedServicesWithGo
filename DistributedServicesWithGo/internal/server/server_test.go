@@ -100,8 +100,8 @@ func setupTest(t *testing.T, fn func(*Config)) (rootClient api.LogClient, nobody
 		return client, conn, opts
 	}
 
-	rootClient, rootConn, _ := newClient(config.RootCertFile, config.RootKeyFile)
-	nobodyClient, nobodyConn, _ := newClient(config.NobodyCertFile, config.NobodyKeyFile)
+	rootClient, rootConn, _ := newClient(config.RootClientCertFile, config.RootClientKeyFile)
+	nobodyClient, nobodyConn, _ := newClient(config.NobodyClientCertFile, config.NobodyClientKeyFile)
 
 	// we’re parsing the server’s cert and key, which we then use to
 	// configure the server’s TLS credentials. We then pass those credentials as a

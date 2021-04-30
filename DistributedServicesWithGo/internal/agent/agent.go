@@ -120,7 +120,7 @@ func (a *Agent) setupServer() error {
 			_ = a.shutdown
 		}
 	}()
-	return nil
+	return err
 }
 
 // setupMembership() sets up a Replicator with the gRPC dial options needed to connect
@@ -146,7 +146,7 @@ func (a *Agent) setupMembership() error {
 		DialOptions: opts,
 		LocalServer: client,
 	}
-	discovery.NewMembership(a.replicator, discovery.Config{
+	a.membership, err = discovery.NewMembership(a.replicator, discovery.Config{
 		NodeName: a.Config.NodeName,
 		BindAddr: a.Config.BindAddr,
 		Tags: map[string]string{
@@ -175,19 +175,27 @@ func (a *Agent) Shutdown() error {
 	a.shutdown = true
 	close(a.shutdowns)
 
-	shutdown := []func() error{
-		a.membership.Leave,
-		a.replicator.Close,
-		func() error {
-			a.server.GracefulStop()
-			return nil
-		},
-		a.log.Close,
-	}
-	for _, fn := range shutdown {
-		if err := fn(); err != nil {
-			return err
-		}
-	}
+	//shutdown := []func() error{
+	//	a.membership.Leave,
+	//	a.replicator.Close,
+	//	func() error {
+	//		a.server.GracefulStop()
+	//		return nil
+	//	},
+	//	a.log.Close,
+	//}
+	//for _, fn := range shutdown {
+	//	if err := fn(); err != nil {
+	//		return err
+	//	}
+	//}
+
+	a.membership.Leave()
+	a.replicator.Close()
+	func() error {
+		a.server.GracefulStop()
+		return nil
+	}()
+	a.log.Close()
 	return nil
 }
