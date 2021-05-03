@@ -9,6 +9,7 @@ require (
 	github.com/hashicorp/raft-boltdb v0.0.0-20210422161416-485fa74b0b01 // indirect
 	github.com/hashicorp/serf v0.9.5
 	github.com/kr/pretty v0.1.0 // indirect
+	github.com/soheilhy/cmux v0.1.5 // indirect
 	github.com/stretchr/testify v1.7.0
 	github.com/travisjeffery/go-dynaport v1.0.0 // indirect
 	github.com/tysontate/gommap v0.0.0-20201017170033-6edfc905bae0
