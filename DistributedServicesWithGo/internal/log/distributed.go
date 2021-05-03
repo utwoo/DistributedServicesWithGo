@@ -24,7 +24,7 @@ type DistributedLog struct {
 // This code defines our distributed log type and a function to create the log.
 // The log package will contain the single-server, non-replicated log we wrote earlier,
 // and the distributed, replicated log built with Raft.
-func NewDistributeLog(dataDir string, config Config) (
+func NewDistributedLog(dataDir string, config Config) (
 	*DistributedLog,
 	error,
 ) {
@@ -42,7 +42,7 @@ func NewDistributeLog(dataDir string, config Config) (
 // the user’s records.
 func (l *DistributedLog) setupLog(dataDir string) error {
 	logDir := filepath.Join(dataDir, "log")
-	if err := os.Mkdir(logDir, 0755); err != nil {
+	if err := os.MkdirAll(logDir, 0755); err != nil {
 		return err
 	}
 	var err error
@@ -66,7 +66,7 @@ func (l *DistributedLog) setupRaft(dataDir string) error {
 
 	// ** Create Raft's log store
 	logDir := filepath.Join(dataDir, "raft", "log")
-	if err := os.Mkdir(logDir, 0755); err != nil {
+	if err := os.MkdirAll(logDir, 0755); err != nil {
 		return err
 	}
 
@@ -147,18 +147,10 @@ func (l *DistributedLog) setupRaft(dataDir string) error {
 	if err != nil {
 		return err
 	}
-	hasState, err := raft.HasExistingState(
-		logStore,
-		stableStore,
-		snapshotStore,
-	)
-	if err != nil {
-		return err
-	}
 	// Generally you’ll bootstrap a server configured with itself as the only voter,
 	// wait until it becomes the leader, and then tell the leader to add more servers
 	// to the cluster. The subsequently added servers don’t bootstrap.
-	if l.config.Raft.Bootstrap && !hasState {
+	if l.config.Raft.Bootstrap {
 		config := raft.Configuration{
 			Servers: []raft.Server{
 				{
@@ -185,7 +177,7 @@ func (l *DistributedLog) Append(record *api.Record) (uint64, error) {
 		&api.ProduceRequest{Record: record},
 	)
 	if err != nil {
-		return 0, nil
+		return 0, err
 	}
 	return res.(*api.ProduceResponse).Offset, nil
 }
@@ -327,7 +319,7 @@ func (fsm *fsm) Restore(r io.ReadCloser) error {
 			return err
 		}
 		size := int64(enc.Uint64(b))
-		if _, err := io.CopyN(&buf, r, size); err != nil {
+		if _, err = io.CopyN(&buf, r, size); err != nil {
 			return err
 		}
 		record := &api.Record{}
@@ -336,12 +328,12 @@ func (fsm *fsm) Restore(r io.ReadCloser) error {
 		}
 		if i == 0 {
 			fsm.log.Config.Segment.InitialOffset = record.Offset
-			if err := fsm.log.Reset(); err != nil {
+			if err = fsm.log.Reset(); err != nil {
 				return err
 			}
-			if _, err := fsm.log.Append(record); err != nil {
-				return err
-			}
+		}
+		if _, err = fsm.log.Append(record); err != nil {
+			return err
 		}
 		buf.Reset()
 	}
@@ -508,7 +500,7 @@ func (streamLayer *StreamLayer) Accept() (net.Conn, error) {
 	if bytes.Compare([]byte{byte(RaftRPC)}, b) != 0 {
 		return nil, fmt.Errorf("not a raft rpc")
 	}
-	if streamLayer.listener != nil {
+	if streamLayer.serverTLSConfig != nil {
 		return tls.Server(conn, streamLayer.serverTLSConfig), nil
 	}
 	return conn, nil
@@ -556,6 +548,7 @@ func (l *DistributedLog) Join(id, addr string) error {
 				// server has already joined
 				return nil
 			}
+			// remove the existing server
 			removeFuture := l.raft.RemoveServer(serverID, 0, 0)
 			if err := removeFuture.Error(); err != nil {
 				return err
@@ -571,8 +564,8 @@ func (l *DistributedLog) Join(id, addr string) error {
 
 // Leave removes the server from the cluster. Removing the leader will trigger a new election.
 func (l *DistributedLog) Leave(id string) error {
-	removeServer := l.raft.RemoveServer(raft.ServerID(id), 0, 0)
-	return removeServer.Error()
+	removeFuture := l.raft.RemoveServer(raft.ServerID(id), 0, 0)
+	return removeFuture.Error()
 }
 
 // WaitForLeader blocks until the cluster has elected a leader or times out.
