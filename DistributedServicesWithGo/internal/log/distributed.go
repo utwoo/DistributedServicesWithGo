@@ -594,3 +594,25 @@ func (l *DistributedLog) Close() error {
 	}
 	return l.log.Close()
 }
+
+// Raft’s configuration comprises the servers in the cluster and includes each
+// server’s ID, address, and suffrage—whether the server votes in Raft elections
+// (we don’t need the suffrage in our project). Raft can tell us the address of the
+// cluster’s leader, too.
+// GetServers converts the data from Raft’s raft.Server type
+// into our *api.Server type for our API to respond with.
+func (l *DistributedLog) GetServers() ([]*api.Server, error) {
+	future := l.raft.GetConfiguration()
+	if err := future.Error(); err != nil {
+		return nil, err
+	}
+	var servers []*api.Server
+	for _, server := range future.Configuration().Servers {
+		servers = append(servers, &api.Server{
+			Id:       string(server.ID),
+			RpcAddr:  string(server.Address),
+			IsLeader: l.raft.Leader() == server.Address,
+		})
+	}
+	return servers, nil
+}

@@ -22,13 +22,18 @@ import (
 )
 
 type Config struct {
-	CommitLog  CommitLog
-	Authorizer Authorizer
+	CommitLog   CommitLog
+	Authorizer  Authorizer
+	GetServerer GetServerer
 }
 
 // Authorizer we can switch out the authorization implementation
 type Authorizer interface {
 	Authorize(subject, object, action string) error
+}
+
+type GetServerer interface {
+	GetServers() ([]*api.Server, error)
 }
 
 // The constants match the values we in our ACL policy table,
@@ -121,6 +126,21 @@ func (s *grpcServer) ConsumeStream(req *api.ConsumeRequest, stream api.Log_Consu
 			req.Offset++
 		}
 	}
+}
+
+// These two snippets enable us to inject different structs that can get servers.
+// We don’t want to add the GetServers() method to our CommitLog interface because
+// a non-distributed log like our Log type doesn’t know about servers. So we
+// made a new interface whose sole method GetServers() matches DistributedLog.Get-
+// Servers. When we update the end-to-end tests in the agent package, we’ll set
+// our DistributedLog on the config as both the CommitLog and the GetServerer—which
+// our new server endpoint wraps with error handling.
+func (s *grpcServer) GetServers(ctx context.Context, request *api.GetServersRequest) (*api.GetServersResponse, error) {
+	servers, err := s.GetServerer.GetServers()
+	if err != nil {
+		return nil, err
+	}
+	return &api.GetServersResponse{Servers: servers}, nil
 }
 
 func newgrpcServer(config *Config) (*grpcServer, error) {
