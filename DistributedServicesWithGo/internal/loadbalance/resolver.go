@@ -55,7 +55,7 @@ func (r *Resolver) Build(
 	// updating the state with a service config. We update the state with a service
 	// config that specifies to use the “proglog” load balancer
 	r.serviceConfig = r.clientConn.ParseServiceConfig(
-		fmt.Sprintf(`{"loadBalancingConfig":[{"%s":{}}]}"`, Name),
+		fmt.Sprintf(`{"loadBalancingConfig":[{"%s":{}}]}`, Name),
 	)
 	var err error
 	r.resolverConn, err = grpc.Dial(target.Endpoint, dialOpts...)
