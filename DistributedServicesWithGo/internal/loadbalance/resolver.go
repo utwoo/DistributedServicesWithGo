@@ -30,6 +30,12 @@ var _ resolver.Builder = (*Resolver)(nil)
 
 const Name = "proglog"
 
+// We register this resolver with gRPC in init() so gRPC knows about this resolver
+// when it’s looking for resolvers that match the target’s scheme.
+func init() {
+	resolver.Register(&Resolver{})
+}
+
 // Build receives the data needed to build a resolver that can discover the
 // servers (like the target address) and the client connection the resolver will
 // update with the servers it discovers. Build() sets up a client connection to
@@ -66,12 +72,6 @@ func (r *Resolver) Build(
 // resolver, you’ll format the target address like this: proglog://your-service-address.
 func (r *Resolver) Scheme() string {
 	return Name
-}
-
-// We register this resolver with gRPC in init() so gRPC knows about this resolver
-// when it’s looking for resolvers that match the target’s scheme.
-func init() {
-	resolver.Register(&Resolver{})
 }
 
 var _ resolver.Resolver = (*Resolver)(nil)
