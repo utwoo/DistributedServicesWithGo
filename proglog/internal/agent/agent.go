@@ -13,10 +13,10 @@ import (
 	"net"
 	"sync"
 	"time"
-	"utwoo.com/DistributedServicesWithGo/internal/auth"
-	"utwoo.com/DistributedServicesWithGo/internal/discovery"
-	"utwoo.com/DistributedServicesWithGo/internal/log"
-	"utwoo.com/DistributedServicesWithGo/internal/server"
+	"utwoo.com/proglog/internal/auth"
+	"utwoo.com/proglog/internal/discovery"
+	"utwoo.com/proglog/internal/log"
+	"utwoo.com/proglog/internal/server"
 )
 
 // An Agent runs on every service instance, setting up and connecting all the

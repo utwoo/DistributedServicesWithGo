@@ -8,8 +8,8 @@ import (
 	"os/signal"
 	"path"
 	"syscall"
-	"utwoo.com/DistributedServicesWithGo/internal/agent"
-	"utwoo.com/DistributedServicesWithGo/internal/config"
+	"utwoo.com/proglog/internal/agent"
+	"utwoo.com/proglog/internal/config"
 )
 
 func main() {
@@ -21,7 +21,7 @@ func main() {
 	// primary logic in that function. Cobra enables you to run hook functions to
 	// run before and after RunE.
 	cmd := &cobra.Command{
-		Use:     "DistributedServicesWithGo",
+		Use:     "proglog",
 		PreRunE: commandLine.setupConfig,
 		RunE:    commandLine.run,
 	}

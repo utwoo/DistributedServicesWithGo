@@ -9,7 +9,7 @@ import (
 	"strconv"
 	"strings"
 	"sync"
-	api "utwoo.com/DistributedServicesWithGo/api/v1"
+	api "utwoo.com/proglog/api/v1"
 )
 
 // Log consists of a list of segments and a pointer to the active segment to

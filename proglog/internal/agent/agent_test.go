@@ -13,9 +13,9 @@ import (
 	"os"
 	"testing"
 	"time"
-	api "utwoo.com/DistributedServicesWithGo/api/v1"
-	"utwoo.com/DistributedServicesWithGo/internal/config"
-	"utwoo.com/DistributedServicesWithGo/internal/loadbalance"
+	api "utwoo.com/proglog/api/v1"
+	"utwoo.com/proglog/internal/config"
+	"utwoo.com/proglog/internal/loadbalance"
 )
 
 func TestAgent(t *testing.T) {

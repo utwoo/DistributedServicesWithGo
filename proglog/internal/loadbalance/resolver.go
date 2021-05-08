@@ -9,7 +9,7 @@ import (
 	"google.golang.org/grpc/resolver"
 	"google.golang.org/grpc/serviceconfig"
 	"sync"
-	api "utwoo.com/DistributedServicesWithGo/api/v1"
+	api "utwoo.com/proglog/api/v1"
 )
 
 // Resolver is the type we’ll implement into gRPC’s resolver.Builder and resolver.Resolver

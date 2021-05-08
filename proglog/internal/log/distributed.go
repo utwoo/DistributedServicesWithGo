@@ -12,7 +12,7 @@ import (
 	"os"
 	"path/filepath"
 	"time"
-	api "utwoo.com/DistributedServicesWithGo/api/v1"
+	api "utwoo.com/proglog/api/v1"
 )
 
 type DistributedLog struct {

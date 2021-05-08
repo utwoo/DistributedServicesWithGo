@@ -6,7 +6,7 @@ import (
 	"io/ioutil"
 	"os"
 	"testing"
-	api "utwoo.com/DistributedServicesWithGo/api/v1"
+	api "utwoo.com/proglog/api/v1"
 )
 
 func TestLog(t *testing.T) {

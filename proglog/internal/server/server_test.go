@@ -16,10 +16,10 @@ import (
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/credentials"
 	"google.golang.org/grpc/status"
-	api "utwoo.com/DistributedServicesWithGo/api/v1"
-	"utwoo.com/DistributedServicesWithGo/internal/auth"
-	"utwoo.com/DistributedServicesWithGo/internal/config"
-	"utwoo.com/DistributedServicesWithGo/internal/log"
+	api "utwoo.com/proglog/api/v1"
+	"utwoo.com/proglog/internal/auth"
+	"utwoo.com/proglog/internal/config"
+	"utwoo.com/proglog/internal/log"
 )
 
 var debug = flag.Bool("debug", false, "Enable observability for debugging.")

@@ -5,7 +5,7 @@ import (
 	"go.uber.org/zap"
 	"google.golang.org/grpc"
 	"sync"
-	api "utwoo.com/DistributedServicesWithGo/api/v1"
+	api "utwoo.com/proglog/api/v1"
 )
 
 // The replicator connects to other servers with the gRPC client, and we need

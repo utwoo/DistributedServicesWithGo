@@ -11,7 +11,7 @@ import (
 	"reflect"
 	"testing"
 	"time"
-	api "utwoo.com/DistributedServicesWithGo/api/v1"
+	api "utwoo.com/proglog/api/v1"
 )
 
 // To begin TestMultipleServers(*testing.T), we set up a three-server cluster. We

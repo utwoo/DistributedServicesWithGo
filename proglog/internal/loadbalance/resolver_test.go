@@ -9,9 +9,9 @@ import (
 	"google.golang.org/grpc/serviceconfig"
 	"net"
 	"testing"
-	api "utwoo.com/DistributedServicesWithGo/api/v1"
-	"utwoo.com/DistributedServicesWithGo/internal/config"
-	"utwoo.com/DistributedServicesWithGo/internal/server"
+	api "utwoo.com/proglog/api/v1"
+	"utwoo.com/proglog/internal/config"
+	"utwoo.com/proglog/internal/server"
 )
 
 // getServers implements GetServerers, whose job is to return a known server set

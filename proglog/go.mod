@@ -1,4 +1,4 @@
-module utwoo.com/DistributedServicesWithGo
+module utwoo.com/proglog
 
 go 1.16
 
